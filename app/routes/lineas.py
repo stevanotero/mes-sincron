@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from app.db import get_connection
 from app.models import LineaProduccion
 
@@ -7,7 +7,6 @@ router = APIRouter()
 
 @router.post("/")
 def crear_linea(linea: LineaProduccion):
-
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -22,7 +21,7 @@ def crear_linea(linea: LineaProduccion):
             estado,
             usuario_creador
         )
-        VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
+        VALUES(%s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
     """, (
         linea.nombre_linea,
@@ -36,21 +35,18 @@ def crear_linea(linea: LineaProduccion):
     ))
 
     nuevo_id = cursor.fetchone()[0]
-
     conn.commit()
-
     cursor.close()
     conn.close()
 
     return {
-        "mensaje": "Linea creada",
+        "mensaje": "Línea creada exitosamente",
         "id": nuevo_id
     }
 
 
 @router.get("/")
 def listar_lineas():
-
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -68,32 +64,16 @@ def listar_lineas():
     """)
 
     filas = cursor.fetchall()
-
     resultado = []
 
     for fila in filas:
-
         tiempo_operativo = fila[3] - fila[4]
 
-        disponibilidad = (
-            tiempo_operativo / fila[3]
-            if fila[3] > 0 else 0
-        )
-
-        rendimiento = (
-            fila[5] / (tiempo_operativo * fila[2])
-            if tiempo_operativo > 0 and fila[2] > 0
-            else 0
-        )
-
-        calidad = (
-            (fila[5] - fila[6]) / fila[5]
-            if fila[5] > 0
-            else 0
-        )
+        disponibilidad = (tiempo_operativo / fila[3]) if fila[3] > 0 else 0
+        rendimiento = (fila[5] / (tiempo_operativo * fila[2])) if tiempo_operativo > 0 and fila[2] > 0 else 0
+        calidad = ((fila[5] - fila[6]) / fila[5]) if fila[5] > 0 else 0
 
         oee = disponibilidad * rendimiento * calidad
-
         oee_porcentaje = round(oee * 100, 2)
 
         if oee_porcentaje < 65:
@@ -121,5 +101,90 @@ def listar_lineas():
 
     cursor.close()
     conn.close()
-
     return resultado
+
+
+@router.get("/{id}")
+def obtener_linea(id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, nombre_linea, capacidad_teorica, tiempo_planificado, 
+               tiempo_paradas, unidades_producidas, unidades_defectuosas, estado
+        FROM lineas_produccion 
+        WHERE id = %s
+    """, (id,))
+
+    fila = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not fila:
+        raise HTTPException(status_code=404, detail="Línea no encontrada")
+
+    return {
+        "id": fila[0],
+        "nombre_linea": fila[1],
+        "capacidad_teorica": fila[2],
+        "tiempo_planificado": fila[3],
+        "tiempo_paradas": fila[4],
+        "unidades_producidas": fila[5],
+        "unidades_defectuosas": fila[6],
+        "estado": fila[7]
+    }
+
+
+@router.put("/{id}")
+def actualizar_linea(id: int, linea: LineaProduccion):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE lineas_produccion
+        SET nombre_linea = %s,
+            capacidad_teorica = %s,
+            tiempo_planificado = %s,
+            tiempo_paradas = %s,
+            unidades_producidas = %s,
+            unidades_defectuosas = %s,
+            estado = %s
+        WHERE id = %s
+        RETURNING id
+    """, (
+        linea.nombre_linea,
+        linea.capacidad_teorica,
+        linea.tiempo_planificado,
+        linea.tiempo_paradas,
+        linea.unidades_producidas,
+        linea.unidades_defectuosas,
+        linea.estado,
+        id
+    ))
+
+    resultado = cursor.fetchone()
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    if not resultado:
+        raise HTTPException(status_code=404, detail="Línea no encontrada")
+
+    return {"mensaje": "Línea actualizada exitosamente", "id": id}
+
+
+@router.delete("/{id}")
+def eliminar_linea(id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM lineas_produccion WHERE id = %s RETURNING id", (id,))
+    resultado = cursor.fetchone()
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    if not resultado:
+        raise HTTPException(status_code=404, detail="Línea no encontrada")
+
+    return {"mensaje": "Línea eliminada exitosamente", "id": id}
