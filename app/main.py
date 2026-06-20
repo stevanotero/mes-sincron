@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.db import get_connection
 from app.routes.lineas import router as lineas_router
+from app.routes.auth import router as auth_router
 
 app = FastAPI(
     title="Micro MES",
@@ -25,6 +26,8 @@ def home():
         "mensaje": "Conexion exitosa",
         "postgres": version[0]
     }
+
+app.include_router(auth_router)
 
 app.include_router(
     lineas_router,

@@ -1,12 +1,13 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from app.db import get_connection
 from app.models import LineaProduccion
+from app.auth import obtener_usuario_actual
 
 router = APIRouter()
 
 
 @router.post("/")
-def crear_linea(linea: LineaProduccion):
+def crear_linea(linea: LineaProduccion, usuario: dict = Depends(obtener_usuario_actual)):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -46,7 +47,7 @@ def crear_linea(linea: LineaProduccion):
 
 
 @router.get("/")
-def listar_lineas():
+def listar_lineas(usuario: dict = Depends(obtener_usuario_actual)):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -105,7 +106,7 @@ def listar_lineas():
 
 
 @router.get("/{id}")
-def obtener_linea(id: int):
+def obtener_linea(id: int, usuario: dict = Depends(obtener_usuario_actual)):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -136,7 +137,7 @@ def obtener_linea(id: int):
 
 
 @router.put("/{id}")
-def actualizar_linea(id: int, linea: LineaProduccion):
+def actualizar_linea(id: int, linea: LineaProduccion, usuario: dict = Depends(obtener_usuario_actual)):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -174,7 +175,7 @@ def actualizar_linea(id: int, linea: LineaProduccion):
 
 
 @router.delete("/{id}")
-def eliminar_linea(id: int):
+def eliminar_linea(id: int, usuario: dict = Depends(obtener_usuario_actual)):
     conn = get_connection()
     cursor = conn.cursor()
 
