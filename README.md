@@ -166,3 +166,44 @@ Contraseña: admin123
 - Tests automatizados
 - Despliegue con Docker
 - Sistema de usuarios persistente en base de datos (actualmente usa un usuario de prueba en memoria)
+## Configuración y restauración de la base de datos
+
+### 1. Crear la base de datos
+
+Desde `psql` o tu cliente de PostgreSQL preferido (pgAdmin, DBeaver, etc.):
+
+```sql
+CREATE DATABASE micro_mes;
+```
+
+### 2. Ejecutar el script de inicialización
+
+El proyecto incluye un script SQL con la estructura completa de las tablas (`usuarios` y `lineas_produccion`), restricciones de integridad y un usuario de prueba.
+
+Desde la terminal:
+
+```bash
+psql -U postgres -d micro_mes -f database/init.sql
+```
+
+Esto crea:
+- La tabla `usuarios` (supervisores de planta)
+- La tabla `lineas_produccion`, con llave foránea hacia `usuarios`
+- Restricciones `CHECK` para evitar valores inválidos (capacidades negativas, estados no permitidos, etc.)
+- Un usuario de prueba: `admin` / `admin123`
+
+### 3. Configurar las variables de entorno
+
+Crear un archivo `.env` en la raíz del proyecto apuntando a esa base de datos (ver sección "Configurar el Backend" más arriba).
+
+## Estrategia de gestión de conexiones a la base de datos
+
+El proyecto utiliza `psycopg` (driver nativo de PostgreSQL para Python) sin ORM.
+
+La estrategia actual es **una conexión por petición** (*connection per request*):
+
+- Cada endpoint que necesita acceder a la base de datos abre una conexión nueva con `get_connection()` al inicio de la función.
+- Se ejecuta la consulta parametrizada correspondiente (usando `%s` como placeholders, nunca concatenando strings, para prevenir inyección SQL).
+- Se cierra el cursor y la conexión explícitamente al finalizar (`cursor.close()` y `conn.close()`).
+
+Esta estrategia es simple y suficiente para el alcance de esta prueba técnica. Para un entorno de producción con mayor volumen de tráfico concurrente, lo recomendable sería implementar un **pool de conexiones** (por ejemplo, usando `psycopg_pool.ConnectionPool` de la librería `psycopg`), de modo que las conexiones se reutilicen en vez de abrirse y cerrarse en cada petición, reduciendo la sobrecarga de establecer conexiones TCP nuevas constantemente con PostgreSQL.
