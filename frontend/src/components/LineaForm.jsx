@@ -157,7 +157,7 @@ function LineaForm({ lineaEditar, onGuardar, onCancelar }) {
                 >
                     <option value="Activa">Activa</option>
                     <option value="Inactiva">Inactiva</option>
-                    <option value="Mantenimiento">Mantenimiento</option>
+                    <option value="En Mantenimiento">En Mantenimiento</option>
                 </select>
             </div>
 

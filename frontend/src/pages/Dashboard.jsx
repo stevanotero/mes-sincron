@@ -3,6 +3,24 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import LineaForm from "../components/LineaForm";
 
+
+function obtenerColorClasificacion(clasificacion) {
+    switch (clasificacion) {
+        case "Inaceptable":
+            return "#ffcccc";
+        case "Regular":
+            return "#ffe0b3";
+        case "Aceptable":
+            return "#fff9b3";
+        case "Buena":
+            return "#d4f7c5";
+        case "Excelencia":
+            return "#a3e6a3";
+        default:
+            return "transparent";
+    }
+}
+
 function Dashboard() {
     const [lineas, setLineas] = useState([]);
     const [cargando, setCargando] = useState(true);
@@ -115,7 +133,10 @@ function Dashboard() {
                     </thead>
                     <tbody>
                         {lineas.map((linea) => (
-                            <tr key={linea.id}>
+                            <tr
+                                key={linea.id}
+                                style={{ backgroundColor: obtenerColorClasificacion(linea.clasificacion) }}
+                            >
                                 <td>{linea.id}</td>
                                 <td>{linea.nombre_linea}</td>
                                 <td>{linea.estado}</td>
@@ -123,7 +144,7 @@ function Dashboard() {
                                 <td>{linea.rendimiento}%</td>
                                 <td>{linea.calidad}%</td>
                                 <td>{linea.oee}%</td>
-                                <td>{linea.clasificacion}</td>
+                                <td><strong>{linea.clasificacion}</strong></td>
                                 <td>
                                     <button onClick={() => manejarEditar(linea)} style={{ marginRight: "5px" }}>
                                         Editar

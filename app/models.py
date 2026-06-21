@@ -9,7 +9,8 @@ class LineaProduccion(BaseModel):
     tiempo_paradas: int
     unidades_producidas: int
     unidades_defectuosas: int
-    estado: Literal["Activa", "Inactiva", "Mantenimiento"]
+    estado: Literal["Activa", "Inactiva", "En Mantenimiento"]
+   
 
     @field_validator("nombre_linea")
     @classmethod

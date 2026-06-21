@@ -32,7 +32,7 @@ def crear_linea(linea: LineaProduccion, usuario: dict = Depends(obtener_usuario_
         linea.unidades_producidas,
         linea.unidades_defectuosas,
         linea.estado,
-        1
+        usuario["id"]
     ))
 
     nuevo_id = cursor.fetchone()[0]
@@ -62,7 +62,8 @@ def listar_lineas(usuario: dict = Depends(obtener_usuario_actual)):
             unidades_defectuosas,
             estado
         FROM lineas_produccion
-    """)
+        WHERE usuario_creador = %s
+    """, (usuario["id"],))
 
     filas = cursor.fetchall()
     resultado = []
@@ -114,8 +115,8 @@ def obtener_linea(id: int, usuario: dict = Depends(obtener_usuario_actual)):
         SELECT id, nombre_linea, capacidad_teorica, tiempo_planificado, 
                tiempo_paradas, unidades_producidas, unidades_defectuosas, estado
         FROM lineas_produccion 
-        WHERE id = %s
-    """, (id,))
+        WHERE id = %s AND usuario_creador = %s
+    """, (id, usuario["id"]))
 
     fila = cursor.fetchone()
     cursor.close()
@@ -150,7 +151,7 @@ def actualizar_linea(id: int, linea: LineaProduccion, usuario: dict = Depends(ob
             unidades_producidas = %s,
             unidades_defectuosas = %s,
             estado = %s
-        WHERE id = %s
+        WHERE id = %s AND usuario_creador = %s
         RETURNING id
     """, (
         linea.nombre_linea,
@@ -160,7 +161,8 @@ def actualizar_linea(id: int, linea: LineaProduccion, usuario: dict = Depends(ob
         linea.unidades_producidas,
         linea.unidades_defectuosas,
         linea.estado,
-        id
+        id,
+        usuario["id"]
     ))
 
     resultado = cursor.fetchone()
@@ -179,7 +181,10 @@ def eliminar_linea(id: int, usuario: dict = Depends(obtener_usuario_actual)):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("DELETE FROM lineas_produccion WHERE id = %s RETURNING id", (id,))
+    cursor.execute(
+        "DELETE FROM lineas_produccion WHERE id = %s AND usuario_creador = %s RETURNING id",
+        (id, usuario["id"])
+    )
     resultado = cursor.fetchone()
     conn.commit()
     cursor.close()
