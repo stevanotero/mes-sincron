@@ -4,15 +4,17 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.config import JWT_SECRET, JWT_ALGORITHM
 
 # Configuración
-CLAVE_SECRETA = "tu_clave_secreta_super_segura_cambia_esto_en_produccion"
-ALGORITMO = "HS256"
+CLAVE_SECRETA = JWT_SECRET
+ALGORITMO = JWT_ALGORITHM
 MINUTOS_EXPIRACION_TOKEN = 60
 
 contexto_password = CryptContext(schemes=["bcrypt"], deprecated="auto")
 esquema_bearer = HTTPBearer()
 
+# Usuario de prueba (temporal, mientras no haya tabla de usuarios)
 USUARIO_PRUEBA = {
     "username": "admin",
     "password": "",
